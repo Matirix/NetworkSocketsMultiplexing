@@ -14,8 +14,8 @@ class ClientState(Enum):
 
 def parse_arguments():
     """
-    Parses command line arguments for server
-    :return: ip, port
+    Parses command line arguments for Client
+    :return: ip, port, key, file
     """
     parser = argparse.ArgumentParser(description="Client-Server Model that uses Select for I/O Multiplexing\n")
     parser.add_argument("-i","--ip", type=str, help="Host IP Address")
@@ -44,6 +44,13 @@ def parse_arguments():
 
 class ClientSocket:
     def __init__(self, host_ip: str, host_port:str, message:str, key:str):
+        """
+        Constructor for ClientSocket
+        :param host_ip: Host IP Address
+        :param host_port: Host Port Number
+        :param message: Message to be sent
+        :param key: Key for decryption
+        """
         self.host_ip = host_ip
         self.host_port = host_port
         self.message = message
@@ -52,9 +59,15 @@ class ClientSocket:
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     def format_payload(self):
+        """
+        Formats the message and key into a single payload
+        """
         return self.message.strip() + '&' + self.key.strip()
 
     def connect(self):
+        """
+        Connects to the Server
+        """
         self.state = ClientState.CONNECTING
         try:
             self.client_socket.connect((self.host_ip, self.host_port))
@@ -65,6 +78,9 @@ class ClientSocket:
             self.state=ClientState.DISCONNECTED
 
     def send_data(self):
+        """
+        Sends the message and key to the Server
+        """
         if self.state == ClientState.CONNECTED:
             payload = self.format_payload()
             try:
@@ -75,6 +91,9 @@ class ClientSocket:
                 print("Sending Error:", e)
 
     def listening(self):
+        """
+        Listens for a response from the Server
+        """
         if self.state == ClientState.SENDING:
             self.state = ClientState.RECEIVING
             response = self.client_socket.recv(1024).decode()

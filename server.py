@@ -20,7 +20,7 @@ class ServerState(enum.Enum):
 
 def parse_arguments():
     """
-    Parses command line arguments for server
+    Parses command line arguments for Creating a Server Connection
     :return: ip, port
     """
     parser = argparse.ArgumentParser(description="Client-Server Model that uses Select for I/O Multiplexing")
@@ -44,6 +44,9 @@ def parse_arguments():
 
 class ServerSocket:
     def __init__(self, server_ip, server_port):
+        """
+        Constructor for ServerSocket
+        """
         self.server_ip = server_ip
         self.server_port = server_port
         self.state = ServerState.INIT
@@ -53,30 +56,21 @@ class ServerSocket:
         self.binding()
 
     def binding(self):
+        """
+        Binds the ServerSocket to the IP and Port - Allowd for address reuse
+        """
         self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.server_socket.bind((self.server_ip, self.server_port))
 
-    def listening(self):
-        self.server_socket.listen()
-        self.state = ServerState.LISTENING
-        print("Server is listening")
-        while True:
-            try:
-                client_socket, client_address = self.server_socket.accept()
-                self.state = ServerState.CONNECTED
-                data = client_socket.recv(1024).decode()
-                payload:str = self.process_data(data)
-                client_socket.send(payload.encode())
-                client_socket.close()
-            except KeyboardInterrupt as e:
-                print("Command/Ctrl +C Detected \n Closing Server", e )
-                break
-        self.server_socket.close()
 
     def listening_multiple_connections(self):
+        """
+        Listens for multiple connections up to 5 clients and handles them in separate threads.
+        Uses mutex to lock the critical section of the code AKA the socket list
+        Uses Select to monitor the sockets for read, write and exception events
+        """
         self.server_socket.listen(5)
         self.state = ServerState.LISTENING
-        # TODO add a time out
         print(f"Monitoring Sockets on {self.server_ip}:{self.server_port}")
         while True:
             try:
@@ -98,6 +92,9 @@ class ServerSocket:
                 break
 
     def handle_connection(self, sock):
+        """
+        Handles the connection with the client
+        """
         try:
             data = sock.recv(1024).decode()
             if not data:
@@ -111,6 +108,9 @@ class ServerSocket:
 
 
     def process_data(self, data:str) -> Optional[str]:
+        """
+        Processes the data received from the client
+        """
             if self.state == ServerState.CONNECTED:
                 self.state = ServerState.RECEIVING
                 text, key = data.split("&", 1)
@@ -124,6 +124,9 @@ class ServerSocket:
 
 
     def remove_socket_safely(self, client_socket):
+        """
+        Safely removes the client socket from the socket list using lock
+        """
         with self.lock:
             if client_socket in self.socket_list:
                 self.socket_list.remove(client_socket)
@@ -131,6 +134,9 @@ class ServerSocket:
 
 
     def decrypt_viegenere_cipher(self, message, key) -> str:
+        """
+        Decrypts the message using the Vigenere Cipher
+        """
         self.state = ServerState.DECRYPTING
         encoded_string = str()
         key_length = len(key)
