@@ -24,7 +24,6 @@ def parse_arguments():
     :return: ip, port
     """
     parser = argparse.ArgumentParser(description="Client-Server Model that uses Select for I/O Multiplexing")
-    # Add parser arguments for host_ip address and port
     parser.add_argument("-i","--ip", type=str, help="Host IP Address")
     parser.add_argument("-p","--port", type=int, help="Host Port Number")
     parser.add_argument('-e', "--example", action='store_true', help="Shows example usage on fixed host and port")
@@ -74,25 +73,6 @@ class ServerSocket:
                 break
         self.server_socket.close()
 
-    def handle_connection(self, sock):
-        try:
-            data = sock.recv(1024).decode()
-            if not data:
-                raise Exception("Client Disconnected")
-            payload: str = self.process_data(data)
-            sock.send(payload.encode())
-        except Exception as e:
-            print("Connection Error", e)
-        finally:
-            self.remove_socket_safely(sock)
-
-    def remove_socket_safely(self, client_socket):
-        with self.lock:
-            if client_socket in self.socket_list:
-                self.socket_list.remove(client_socket)
-        client_socket.close()
-
-
     def listening_multiple_connections(self):
         self.server_socket.listen(5)
         self.state = ServerState.LISTENING
@@ -117,19 +97,40 @@ class ServerSocket:
                 self.remove_socket_safely(self.server_socket)
                 break
 
+    def handle_connection(self, sock):
+        try:
+            data = sock.recv(1024).decode()
+            if not data:
+                raise Exception("Client Disconnected")
+            payload: str = self.process_data(data)
+            sock.send(payload.encode())
+        except Exception as e:
+            print("Connection Error", e)
+        finally:
+            self.remove_socket_safely(sock)
+
 
     def process_data(self, data:str) -> Optional[str]:
-        if self.state == ServerState.CONNECTED:
-            self.state = ServerState.RECEIVING
-            text, key = data.split("&", 1)
-            print(f"Decrpyting {text.strip()} with key {key.strip()}")
-            payload = self.decrypt_viegenere_cipher(text, key)
-            return payload
-        else:
-            print(f"Server state = {self.state}")
+            if self.state == ServerState.CONNECTED:
+                self.state = ServerState.RECEIVING
+                text, key = data.split("&", 1)
+                print(f"====Thread: {threading.get_ident()}=====")
+                print(f"Decrpyting {text} with key {key}")
+                print(f"==========================")
+                payload = self.decrypt_viegenere_cipher(text, key)
+                return payload
+            else:
+                print(f"Server state = {self.state}")
 
 
-    def decrypt_viegenere_cipher(self, message, key, decrypt=True) -> str:
+    def remove_socket_safely(self, client_socket):
+        with self.lock:
+            if client_socket in self.socket_list:
+                self.socket_list.remove(client_socket)
+        client_socket.close()
+
+
+    def decrypt_viegenere_cipher(self, message, key) -> str:
         self.state = ServerState.DECRYPTING
         encoded_string = str()
         key_length = len(key)
@@ -149,9 +150,7 @@ class ServerSocket:
         return encoded_string
 
 
-def main():
+if __name__ == '__main__':
     host, port = parse_arguments()
     ss = ServerSocket(host, port)
     ss.listening_multiple_connections()
-
-main()

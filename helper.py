@@ -16,3 +16,21 @@ def ip_and_port_validator(message, isPort):
             raise ValueError("Invalid Address: Must be all numbers")
             return False
     return True
+
+def validate_key(key):
+    if not key:
+        raise ValueError("Missing Key: usage -k <key>")
+        return False
+    for char in key:
+        if not char.isalpha():
+            raise ValueError("Invalid Key: Must be all alphabetic characters")
+            return False
+    return True
+
+
+def read_file(file):
+        try:
+            with open(file) as f:
+                return f.read()
+        except Exception as e:
+            print("File Error", e)
