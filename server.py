@@ -89,7 +89,8 @@ class ServerSocket:
             except KeyboardInterrupt as e:
                 print("Command/Ctrl +C Detected \n Closing Server", e )
                 self.remove_socket_safely(self.server_socket)
-                break
+                self.state = ServerState.CLOSING
+                exit(1)
 
     def handle_connection(self, sock):
         """
