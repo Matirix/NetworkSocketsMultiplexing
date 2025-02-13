@@ -84,7 +84,7 @@ def main():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.connect((host, port))
     message = read_file("test.txt")
-    key = 'key'
+    key = 'aaabbb'
     message = message + '&' + key
     # Sending
     server_socket.send(message.encode())

@@ -1,11 +1,12 @@
 from typing import Optional
 import socket
-import sys
 from curses.ascii import isalpha, isupper
 import enum
+import argparse
 from time import sleep
 import threading
 import select
+from helper import ip_and_port_validator
 
 
 class ServerState(enum.Enum):
@@ -16,6 +17,30 @@ class ServerState(enum.Enum):
     DECRYPTING = 4
     SENDING = 5
     CLOSING = 6
+
+def parse_arguments():
+    """
+    Parses command line arguments for server
+    :return: ip, port
+    """
+    parser = argparse.ArgumentParser(description="Client-Server Model that uses Select for I/O Multiplexing")
+    # Add parser arguments for host_ip address and port
+    parser.add_argument("-i","--ip", type=str, help="Host IP Address")
+    parser.add_argument("-p","--port", type=int, help="Host Port Number")
+    parser.add_argument('-e', "--example", action='store_true', help="Shows example usage on fixed host and port")
+    args = parser.parse_args()
+    if args.example:
+        ip, port = '127.0.0.1', 3333
+        example_socket = ServerSocket(ip, port)
+        example_socket.listening_multiple_connections()
+    try:
+        ip = args.ip if ip_and_port_validator(args.ip, False) else ""
+        port = args.port if ip_and_port_validator(args.port, True) else ""
+    except Exception as e:
+        print("Parse Error -", e)
+        exit(1)
+
+    return ip, port
 
 
 class ServerSocket:
@@ -60,19 +85,19 @@ class ServerSocket:
             print("Connection Error", e)
         finally:
             self.remove_socket_safely(sock)
-            sock.close()
 
     def remove_socket_safely(self, client_socket):
         with self.lock:
             if client_socket in self.socket_list:
                 self.socket_list.remove(client_socket)
+        client_socket.close()
 
 
     def listening_multiple_connections(self):
         self.server_socket.listen(5)
         self.state = ServerState.LISTENING
         # TODO add a time out
-        print("Monitoring Server Socket")
+        print(f"Monitoring Sockets on {self.server_ip}:{self.server_port}")
         while True:
             try:
                 with self.lock:
@@ -85,16 +110,19 @@ class ServerSocket:
                         threading.Thread(target=self.handle_connection, args=(client_socket,)).start()
                 for sock in exception_list:
                     self.remove_socket_safely(sock)
-                    sock.close()
             except Exception as e:
                 print("Error handling socket:", e)
+            except KeyboardInterrupt as e:
+                print("Command/Ctrl +C Detected \n Closing Server", e )
+                self.remove_socket_safely(self.server_socket)
+                break
 
 
     def process_data(self, data:str) -> Optional[str]:
         if self.state == ServerState.CONNECTED:
             self.state = ServerState.RECEIVING
-            print("Recieved Data:", data)
             text, key = data.split("&", 1)
+            print(f"Decrpyting {text.strip()} with key {key.strip()}")
             payload = self.decrypt_viegenere_cipher(text, key)
             return payload
         else:
@@ -107,24 +135,22 @@ class ServerSocket:
         key_length = len(key)
         for i in range(len(message)):
             letter = message[i]
+            shift = ord(key[i % key_length]) - ord('a')
             if letter == ' ' or not isalpha(letter):
                 encoded_string += letter
                 continue
             if isupper(letter):
-                shift = ord(key[i % key_length]) - ord('A')
-                encoded_char = chr(((ord(letter) - ord('A') + shift) % 26) + ord('A'))
+                encoded_char = chr(((ord(letter) - ord('A') - shift) % 26) + ord('A'))
             else:
-                shift = ord(key[i % key_length]) - ord('a')
-                encoded_char = chr(((ord(letter) - ord('a') + shift) % 26) + ord('a'))
+                encoded_char = chr(((ord(letter) - ord('a') - shift) % 26) + ord('a'))
             encoded_string += encoded_char
-            print(encoded_char)
+            print(f"Thread: {threading.get_ident()} - encoded_char: {encoded_char}")
             sleep(0.5)
         return encoded_string
 
 
 def main():
-    host = '127.0.0.1'
-    port = 3333
+    host, port = parse_arguments()
     ss = ServerSocket(host, port)
     ss.listening_multiple_connections()
 
