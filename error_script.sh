@@ -20,7 +20,7 @@ for cmd in "${commands[@]}"; do
     echo -e "\nTest #$index :$title"
     echo "Running: $command"
     eval "$command"
-    sleep 3
+    sleep 7
     clear
     ((index++))
 done

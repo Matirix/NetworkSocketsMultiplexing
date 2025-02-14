@@ -101,7 +101,8 @@ class ServerSocket:
             if not data:
                 raise Exception("Client Disconnected")
             payload: str = self.process_data(data)
-            sock.send(payload.encode())
+            if payload:
+                sock.send(payload.encode())
         except Exception as e:
             print("Connection Error", e)
         finally:
@@ -117,11 +118,12 @@ class ServerSocket:
             text, key = data.split("&", 1)
             print(f"====Thread: {threading.get_ident()}=====")
             print(f"Decrpyting {text} with key {key}")
-            print(f"==========================")
+            print("==========================")
             payload = self.decrypt_viegenere_cipher(text, key)
+            print(f"=====Finished Decrypting {threading.get_ident()}======")
             return payload
-        else:
-            print(f"Server state = {self.state}")
+        # else:
+            # print(f"Server state = {self.state}")
 
 
     def remove_socket_safely(self, sock):
@@ -146,13 +148,14 @@ class ServerSocket:
             shift = ord(key[i % key_length]) - ord('a')
             if letter == ' ' or not isalpha(letter):
                 decoded_string += letter
+                print(f"Thread: {threading.get_ident()} - Ignoring Special Chracter: {letter}")
                 continue
             if isupper(letter):
                 decoded_char = chr(((ord(letter) - ord('A') - shift) % 26) + ord('A'))
             else:
                 decoded_char = chr(((ord(letter) - ord('a') - shift) % 26) + ord('a'))
             decoded_string += decoded_char
-            print(f"Thread: {threading.get_ident()} - encoded_char: {decoded_char}")
+            print(f"Thread: {threading.get_ident()} - DECODED CHARACTER: {decoded_char}")
             sleep(0.5)
         return decoded_string
 
