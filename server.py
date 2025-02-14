@@ -100,7 +100,7 @@ class ServerSocket:
             data = sock.recv(1024).decode()
             if not data:
                 raise Exception("Client Disconnected")
-            payload: str = self.process_data(data)
+            payload = self.process_data(data)
             if payload:
                 sock.send(payload.encode())
         except Exception as e:
@@ -109,7 +109,7 @@ class ServerSocket:
             self.remove_socket_safely(sock)
 
 
-    def process_data(self, data:str) -> Optional[str]:
+    def process_data(self, data):
         """
         Processes the data received from the client
         """

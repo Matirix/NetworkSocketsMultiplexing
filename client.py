@@ -43,7 +43,7 @@ def parse_arguments():
 
 
 class ClientSocket:
-    def __init__(self, host_ip: str, host_port:int, message:str, key:str):
+    def __init__(self, host_ip: str, host_port, message, key:str):
         """
         Constructor for ClientSocket
         :param host_ip: Host IP Address
