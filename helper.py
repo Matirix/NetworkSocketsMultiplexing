@@ -1,19 +1,19 @@
-def ip_and_port_validator(message, isPort):
-    if not message:
+def is_valid_address_port(addrport, is_port):
+    if not addrport:
         raise ValueError("Missing Arguments: usage -ip <ip> -port <port>")
         return False
-    if isPort:
-        if message < 1 or message > 65535:
+    if is_port:
+        if addrport < 1 or addrport > 65535:
             raise ValueError("Invalid Port Number: Must be a number within range 1-65535")
             return False
         return True
-    sections = message.split('.')
+    sections = addrport.split('.')
     if len(sections) != 4:
         raise ValueError("Invalid Address: Must be in the following format xxx.xxx.xxx.xxx")
         return False
     for section in sections:
-        if not section.isdigit() and section < 0 and section > 255:
-            raise ValueError("Invalid Address: Must be all numbers")
+        if not section.isdigit() or int(section) < 0 or int(section) > 255:
+            raise ValueError("Invalid Address: Must be all numbers within range 0-255")
             return False
     return True
 
@@ -29,8 +29,8 @@ def validate_key(key):
 
 
 def read_file(file):
-        try:
-            with open(file) as f:
-                return f.read()
-        except Exception as e:
-            print("File Error", e)
+    try:
+        with open(file) as f:
+            return f.read()
+    except Exception as e:
+        print("File Error", e)

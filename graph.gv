@@ -1,0 +1,29 @@
+digraph StateMachine {
+
+    // SERVER
+    subgraph cluster_server{
+        label="SERVER"
+        INIT -> LISTENING [label="ClientSocket"];
+        LISTENING -> CONNECTED [label="listening_multiple_connections"];
+        CONNECTED -> RECEIVING [label="receiving_connection"];
+        RECEIVING -> DECRYPTING [label="process_data"];
+        DECRYPTING -> SENDING [label="decrypt_viegenere_cipher"];
+        SENDING -> CLOSING [label="remove_socket_safely"];
+    }
+    // Client
+
+    subgraph cluster_client{
+        label="CLIENT"
+        CLIENT_INIT -> CLIENT_CONNECTING [label="ClientSocket"];
+        CLIENT_CONNECTING -> CLIENT_CONNECTED
+        CLIENT_CONNECTED -> CLIENT_SENDING
+        CLIENT_SENDING -> CLIENT_RECEIVING
+        CLIENT_RECEIVING -> CLIENT_DISCONNECTED [label="client.socket.close()"];
+    }
+    CLIENT_CONNECTED -> CONNECTED [label="connecting", style="dotted"];
+    CLIENT_SENDING -> RECEIVING [label="send_data", style="dotted"];
+    SENDING -> CLIENT_RECEIVING [label="await_response", style="dotted"];
+
+
+
+}

@@ -1,6 +1,6 @@
 import socket
 from enum import Enum
-from helper import ip_and_port_validator, validate_key, read_file
+from helper import is_valid_address_port as ip_and_port_validator, validate_key, read_file
 import argparse
 
 class ClientState(Enum):
@@ -43,7 +43,7 @@ def parse_arguments():
 
 
 class ClientSocket:
-    def __init__(self, host_ip: str, host_port:str, message:str, key:str):
+    def __init__(self, host_ip: str, host_port:int, message:str, key:str):
         """
         Constructor for ClientSocket
         :param host_ip: Host IP Address
@@ -86,13 +86,13 @@ class ClientSocket:
             try:
                 self.client_socket.send(payload.encode())
                 self.state = ClientState.SENDING
-                self.listening()
+                self.await_response()
             except Exception as e:
                 print("Sending Error:", e)
 
-    def listening(self):
+    def await_response(self):
         """
-        Listens for a response from the Server
+        Listens for a response from the Server and then closes the connection
         """
         if self.state == ClientState.SENDING:
             self.state = ClientState.RECEIVING

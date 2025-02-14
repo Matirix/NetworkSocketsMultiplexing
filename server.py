@@ -6,7 +6,7 @@ import argparse
 from time import sleep
 import threading
 import select
-from helper import ip_and_port_validator
+from helper import is_valid_address_port as ip_and_port_validator
 
 
 class ServerState(enum.Enum):
@@ -81,7 +81,7 @@ class ServerSocket:
                         client_socket, client_address = self.server_socket.accept()
                         self.socket_list.append(client_socket)
                         self.state = ServerState.CONNECTED
-                        threading.Thread(target=self.handle_connection, args=(client_socket,)).start()
+                        threading.Thread(target=self.receive_connection, args=(client_socket,)).start()
                 for sock in exception_list:
                     self.remove_socket_safely(sock)
             except Exception as e:
@@ -92,7 +92,7 @@ class ServerSocket:
                 self.state = ServerState.CLOSING
                 exit(1)
 
-    def handle_connection(self, sock):
+    def receive_connection(self, sock):
         """
         Handles the connection with the client
         """
@@ -112,26 +112,26 @@ class ServerSocket:
         """
         Processes the data received from the client
         """
-            if self.state == ServerState.CONNECTED:
-                self.state = ServerState.RECEIVING
-                text, key = data.split("&", 1)
-                print(f"====Thread: {threading.get_ident()}=====")
-                print(f"Decrpyting {text} with key {key}")
-                print(f"==========================")
-                payload = self.decrypt_viegenere_cipher(text, key)
-                return payload
-            else:
-                print(f"Server state = {self.state}")
+        if self.state == ServerState.CONNECTED:
+            self.state = ServerState.RECEIVING
+            text, key = data.split("&", 1)
+            print(f"====Thread: {threading.get_ident()}=====")
+            print(f"Decrpyting {text} with key {key}")
+            print(f"==========================")
+            payload = self.decrypt_viegenere_cipher(text, key)
+            return payload
+        else:
+            print(f"Server state = {self.state}")
 
 
-    def remove_socket_safely(self, client_socket):
+    def remove_socket_safely(self, sock):
         """
         Safely removes the client socket from the socket list using lock
         """
         with self.lock:
-            if client_socket in self.socket_list:
-                self.socket_list.remove(client_socket)
-        client_socket.close()
+            if sock in self.socket_list:
+                self.socket_list.remove(sock)
+        sock.close()
 
 
     def decrypt_viegenere_cipher(self, message, key) -> str:
@@ -139,22 +139,22 @@ class ServerSocket:
         Decrypts the message using the Vigenere Cipher
         """
         self.state = ServerState.DECRYPTING
-        encoded_string = str()
+        decoded_string = str()
         key_length = len(key)
         for i in range(len(message)):
             letter = message[i]
             shift = ord(key[i % key_length]) - ord('a')
             if letter == ' ' or not isalpha(letter):
-                encoded_string += letter
+                decoded_string += letter
                 continue
             if isupper(letter):
-                encoded_char = chr(((ord(letter) - ord('A') - shift) % 26) + ord('A'))
+                decoded_char = chr(((ord(letter) - ord('A') - shift) % 26) + ord('A'))
             else:
-                encoded_char = chr(((ord(letter) - ord('a') - shift) % 26) + ord('a'))
-            encoded_string += encoded_char
-            print(f"Thread: {threading.get_ident()} - encoded_char: {encoded_char}")
+                decoded_char = chr(((ord(letter) - ord('a') - shift) % 26) + ord('a'))
+            decoded_string += decoded_char
+            print(f"Thread: {threading.get_ident()} - encoded_char: {decoded_char}")
             sleep(0.5)
-        return encoded_string
+        return decoded_string
 
 
 if __name__ == '__main__':
