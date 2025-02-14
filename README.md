@@ -10,8 +10,7 @@ This client/server application demonstrates network communication using network 
 
 ### Clone the Repository
 To obtain the project, clone the GitHub repository:
-```bash
-git clone https://github.com/Matirix/NetworkSocketsMultiplexing.git```
+```bash git clone https://github.com/Matirix/NetworkSocketsMultiplexing.git```
 
 ## Running the Application
 
